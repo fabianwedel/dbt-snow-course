@@ -1,0 +1,53 @@
+version: 2
+
+exposures:
+  # ── Executive Orders Dashboard ─────────────────────────────────────────────
+  - name: executive_orders_dashboard
+    label: Executive Orders Dashboard
+    type: dashboard
+    maturity: high
+    url: https://bi.company.com/dashboards/orders
+    description: >
+      Executive-facing dashboard showing order volume, revenue trends,
+      customer tier distribution, and regional performance.
+      Refreshed daily at 06:00 UTC by the dbt Cloud scheduled job.
+    owner:
+      name: Analytics Team
+      email: analytics@company.com
+    depends_on:
+      - ref('fct_orders')
+      - ref('dim_customers')
+    tags: ['executive', 'daily']
+
+  # ── Customer Lifetime Value Notebook ───────────────────────────────────────
+  - name: customer_ltv_analysis
+    label: Customer LTV Analysis
+    type: notebook
+    maturity: medium
+    url: https://notebooks.company.com/customer-ltv
+    description: >
+      Python notebook used by the data science team to build and
+      evaluate customer lifetime value prediction models.
+      Reads directly from dim_customers in the marts schema.
+    owner:
+      name: Data Science Team
+      email: datascience@company.com
+    depends_on:
+      - ref('dim_customers')
+      - ref('fct_orders')
+    tags: ['data-science', 'weekly']
+
+  # ── Ops Revenue Application ────────────────────────────────────────────────
+  - name: revenue_ops_application
+    label: Revenue Operations App
+    type: application
+    maturity: low
+    description: >
+      Internal Flask application used by Revenue Operations to
+      query order status and customer tier in real time.
+    owner:
+      name: Revenue Operations
+      email: revops@company.com
+    depends_on:
+      - ref('fct_orders')
+    tags: ['internal-app']

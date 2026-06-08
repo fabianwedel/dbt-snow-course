@@ -1,0 +1,124 @@
+version: 2
+
+models:
+  # ── stg_tpch__orders ──────────────────────────────────────────────────────
+  - name: stg_tpch__orders
+    description: >
+      Staging model for TPC-H ORDERS. One row per customer order.
+      Applies consistent column naming and decodes status codes.
+      No business logic — see fct_orders for that.
+    columns:
+      - name: order_id
+        description: Unique order identifier (natural PK from source).
+        tests: [not_null, unique]
+      - name: customer_id
+        description: Foreign key to stg_tpch__customers.customer_id.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_tpch__customers')
+              field: customer_id
+      - name: order_status_code
+        description: Raw single-character status code from source.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['O', 'F', 'P']
+      - name: order_status
+        description: Human-readable status label decoded from order_status_code.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Open', 'Fulfilled', 'In Progress', 'Unknown']
+      - name: order_total_price
+        description: Total price of the order.
+        tests: [not_null]
+      - name: order_date
+        description: Date the order was placed.
+        tests: [not_null]
+      - name: order_priority
+        description: Order priority classification string.
+      - name: clerk_id
+        description: Identifier of the clerk who processed the order.
+      - name: ship_priority
+        description: Ship priority integer code.
+      - name: order_comment
+        description: Free-text comment from the source system.
+
+  # ── stg_tpch__lineitems ───────────────────────────────────────────────────
+  - name: stg_tpch__lineitems
+    description: >
+      Staging model for TPC-H LINEITEM. One row per order line item.
+      Calculates net_price and gross_price once here for downstream reuse.
+    columns:
+      - name: order_id
+        description: Foreign key to stg_tpch__orders.order_id.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_tpch__orders')
+              field: order_id
+      - name: line_number
+        description: Position of this line within the order (1-indexed).
+        tests: [not_null]
+      - name: part_id
+        description: Foreign key to stg_tpch__parts.part_id.
+        tests: [not_null]
+      - name: supplier_id
+        description: Foreign key to stg_tpch__suppliers.supplier_id.
+        tests: [not_null]
+      - name: quantity
+        description: Number of units ordered on this line.
+        tests: [not_null]
+      - name: extended_price
+        description: Gross extended price before discount and tax.
+        tests: [not_null]
+      - name: discount_fraction
+        description: Discount applied as a fraction (0.00 to 0.10).
+      - name: tax_fraction
+        description: Tax applied as a fraction.
+      - name: net_price
+        description: extended_price * (1 - discount_fraction). Rounded to 2dp.
+      - name: gross_price
+        description: net_price * (1 + tax_fraction). Rounded to 2dp.
+      - name: return_flag
+        description: Return status flag (A=Accepted, N=None, R=Returned).
+      - name: line_status
+        description: Line item status code (F=Fulfilled, O=Open).
+      - name: ship_date
+        description: Date the line item shipped.
+      - name: commit_date
+        description: Committed delivery date.
+      - name: receipt_date
+        description: Actual receipt date.
+      - name: ship_instructions
+        description: Free-text shipping instructions.
+      - name: ship_mode
+        description: Shipping mode used (AIR, TRUCK, SHIP, RAIL, etc.).
+      - name: line_comment
+        description: Free-text comment from the source system.
+
+  # ── stg_tpch__customers ──────────────────────────────────────────────────
+  - name: stg_tpch__customers
+    description: >
+      Staging model for TPC-H CUSTOMER. One row per customer.
+    columns:
+      - name: customer_id
+        description: Unique customer identifier (PK).
+        tests: [not_null, unique]
+      - name: nation_id
+        description: Foreign key to stg_tpch__nations.nation_id.
+        tests: [not_null]
+      - name: customer_name
+        description: Customer full name.
+        tests: [not_null]
+      - name: customer_address
+        description: Mailing address.
+      - name: customer_phone
+        description: Contact phone number.
+      - name: account_balance
+        description: Current account balance.
+      - name: market_segment
+        description: Customer's market segment (e.g. AUTOMOBILE, BUILDING).
+      - name: customer_comment
+        description: Free-text comment from source.

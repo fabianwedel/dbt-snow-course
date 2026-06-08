@@ -1,0 +1,66 @@
+name: 'dbt_snowflake_course'
+version: '1.0.0'
+config-version: 2
+
+# ── Profile (matches profiles.yml entry) ─────────────────────────────────────
+profile: 'dbt_snowflake_course'
+
+# ── Model paths ───────────────────────────────────────────────────────────────
+model-paths:       ["models"]
+analysis-paths:    ["analyses"]
+test-paths:        ["tests"]
+seed-paths:        ["seeds"]
+macro-paths:       ["macros"]
+snapshot-paths:    ["snapshots"]
+docs-paths:        ["docs"]
+
+# ── Output directory ──────────────────────────────────────────────────────────
+target-path:       "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# ── Model configs by folder ───────────────────────────────────────────────────
+models:
+  dbt_snowflake_course:
+    # Staging layer: lightweight views that mirror raw sources 1-to-1
+    staging:
+      +materialized: view
+      +schema: staging
+      tpch:
+        +tags: ['staging', 'tpch']
+
+    # Intermediate layer: joins, enrichment, light aggregations
+    intermediate:
+      +materialized: view
+      +schema: intermediate
+      +tags: ['intermediate']
+
+    # Mart layer: business-level facts and dimensions
+    marts:
+      +materialized: table
+      +schema: marts
+      +tags: ['mart']
+
+# ── Seed configs ──────────────────────────────────────────────────────────────
+seeds:
+  dbt_snowflake_course:
+    +schema: seeds
+    nation_codes:
+      +column_types:
+        nation_key:  integer
+        nation_name: varchar(25)
+        region_key:  integer
+        comment:     varchar(255)
+
+# ── Snapshot configs ──────────────────────────────────────────────────────────
+snapshots:
+  dbt_snowflake_course:
+    +target_schema: snapshots
+    +strategy: timestamp
+
+# ── Variable defaults ─────────────────────────────────────────────────────────
+vars:
+  # Override via CLI: dbt run --vars '{"start_date": "2023-01-01"}'
+  start_date: '2020-01-01'
+  currency_symbol: '$'

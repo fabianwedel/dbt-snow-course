@@ -1,0 +1,15 @@
+packages:
+  # Core dbt utility macros (surrogate keys, date spines, pivots, etc.)
+  - package: dbt-labs/dbt_utils
+    version: [">=1.0.0", "<2.0.0"]
+
+  # great_expectations-style data quality tests for dbt
+  - package: calogica/dbt_expectations
+    version: [">=0.10.0", "<1.0.0"]
+
+  # Auto-generate source YAML from warehouse schema (development helper)
+  - package: dbt-labs/codegen
+    version: [">=0.12.0", "<1.0.0"]
+
+# ── Install with:  dbt deps
+# ── Packages are installed into: dbt_packages/  (git-ignored)

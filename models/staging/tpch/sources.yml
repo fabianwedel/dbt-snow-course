@@ -1,0 +1,211 @@
+version: 2
+
+sources:
+  - name: tpch
+    description: >
+      TPC-H benchmark data provided as a Snowflake sample dataset.
+      All raw tables live in SNOWFLAKE_SAMPLE_DATA.TPCH_SF1.
+      Use this source definition to reference raw data instead of
+      hardcoding database/schema names in model SQL.
+    database: SNOWFLAKE_SAMPLE_DATA
+    schema: TPCH_SF1
+
+    # ── Freshness monitoring ─────────────────────────────────────────────────
+    # Run:  dbt source freshness
+    freshness:
+      warn_after:  {count: 24, period: hour}
+      error_after: {count: 48, period: hour}
+
+    tables:
+      # ── ORDERS ─────────────────────────────────────────────────────────────
+      - name: orders
+        description: One row per customer order. Contains order header information.
+        loaded_at_field: O_ORDERDATE
+        columns:
+          - name: O_ORDERKEY
+            description: Unique order identifier (primary key).
+            tests: [not_null, unique]
+          - name: O_CUSTKEY
+            description: Foreign key to CUSTOMER.C_CUSTKEY.
+            tests:
+              - not_null
+              - relationships:
+                  to: source('tpch', 'customer')
+                  field: C_CUSTKEY
+          - name: O_ORDERSTATUS
+            description: Single-character order status code.
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ['O', 'F', 'P']
+          - name: O_TOTALPRICE
+            description: Total price of the order in USD cents.
+            tests: [not_null]
+          - name: O_ORDERDATE
+            description: Date the order was placed.
+            tests: [not_null]
+          - name: O_ORDERPRIORITY
+            description: Order priority classification.
+          - name: O_CLERK
+            description: Identifier of the clerk who processed the order.
+          - name: O_SHIPPRIORITY
+            description: Ship priority code.
+          - name: O_COMMENT
+            description: Free-text comment on the order.
+
+      # ── LINEITEM ────────────────────────────────────────────────────────────
+      - name: lineitem
+        description: >
+          One row per order line item. Each order can have multiple line items.
+          This is the most granular table in TPC-H.
+        columns:
+          - name: L_ORDERKEY
+            description: Foreign key to ORDERS.O_ORDERKEY.
+            tests:
+              - not_null
+              - relationships:
+                  to: source('tpch', 'orders')
+                  field: O_ORDERKEY
+          - name: L_PARTKEY
+            description: Foreign key to PART.P_PARTKEY.
+            tests: [not_null]
+          - name: L_SUPPKEY
+            description: Foreign key to SUPPLIER.S_SUPPKEY.
+            tests: [not_null]
+          - name: L_LINENUMBER
+            description: Position of this line within the order (1-indexed).
+            tests: [not_null]
+          - name: L_QUANTITY
+            description: Quantity of parts ordered on this line.
+            tests: [not_null]
+          - name: L_EXTENDEDPRICE
+            description: Extended price = quantity × unit price.
+            tests: [not_null]
+          - name: L_DISCOUNT
+            description: Discount fraction applied (0.00–0.10).
+          - name: L_TAX
+            description: Tax fraction applied.
+          - name: L_RETURNFLAG
+            description: Return flag code (A, N, R).
+          - name: L_LINESTATUS
+            description: Line item status code (F, O).
+          - name: L_SHIPDATE
+            description: Date the line item was shipped.
+          - name: L_COMMITDATE
+            description: Date the line item was committed.
+          - name: L_RECEIPTDATE
+            description: Date the line item was received.
+          - name: L_SHIPINSTRUCT
+            description: Shipping instructions text.
+          - name: L_SHIPMODE
+            description: Shipping mode (AIR, TRUCK, SHIP, etc.).
+          - name: L_COMMENT
+            description: Free-text comment.
+
+      # ── CUSTOMER ────────────────────────────────────────────────────────────
+      - name: customer
+        description: One row per customer. Contains customer master data.
+        columns:
+          - name: C_CUSTKEY
+            description: Unique customer identifier (primary key).
+            tests: [not_null, unique]
+          - name: C_NAME
+            description: Customer name.
+            tests: [not_null]
+          - name: C_ADDRESS
+            description: Customer mailing address.
+          - name: C_NATIONKEY
+            description: Foreign key to NATION.N_NATIONKEY.
+            tests:
+              - not_null
+              - relationships:
+                  to: source('tpch', 'nation')
+                  field: N_NATIONKEY
+          - name: C_PHONE
+            description: Customer phone number.
+          - name: C_ACCTBAL
+            description: Customer account balance.
+          - name: C_MKTSEGMENT
+            description: Market segment the customer belongs to.
+          - name: C_COMMENT
+            description: Free-text comment.
+
+      # ── NATION ──────────────────────────────────────────────────────────────
+      - name: nation
+        description: Reference table of nations.
+        columns:
+          - name: N_NATIONKEY
+            description: Unique nation identifier (primary key).
+            tests: [not_null, unique]
+          - name: N_NAME
+            description: Nation name.
+            tests: [not_null]
+          - name: N_REGIONKEY
+            description: Foreign key to REGION.R_REGIONKEY.
+            tests: [not_null]
+          - name: N_COMMENT
+            description: Free-text comment.
+
+      # ── PART ────────────────────────────────────────────────────────────────
+      - name: part
+        description: One row per part (product). Contains part master data.
+        columns:
+          - name: P_PARTKEY
+            description: Unique part identifier (primary key).
+            tests: [not_null, unique]
+          - name: P_NAME
+            description: Part name.
+            tests: [not_null]
+          - name: P_MFGR
+            description: Manufacturer of the part.
+          - name: P_BRAND
+            description: Brand of the part.
+          - name: P_TYPE
+            description: Part type description.
+          - name: P_SIZE
+            description: Part size.
+          - name: P_CONTAINER
+            description: Packaging container type.
+          - name: P_RETAILPRICE
+            description: Retail price of the part.
+          - name: P_COMMENT
+            description: Free-text comment.
+
+      # ── SUPPLIER ────────────────────────────────────────────────────────────
+      - name: supplier
+        description: One row per supplier. Contains supplier master data.
+        columns:
+          - name: S_SUPPKEY
+            description: Unique supplier identifier (primary key).
+            tests: [not_null, unique]
+          - name: S_NAME
+            description: Supplier name.
+            tests: [not_null]
+          - name: S_ADDRESS
+            description: Supplier mailing address.
+          - name: S_NATIONKEY
+            description: Foreign key to NATION.N_NATIONKEY.
+            tests:
+              - not_null
+              - relationships:
+                  to: source('tpch', 'nation')
+                  field: N_NATIONKEY
+          - name: S_PHONE
+            description: Supplier phone number.
+          - name: S_ACCTBAL
+            description: Supplier account balance.
+          - name: S_COMMENT
+            description: Free-text comment.
+
+      # ── REGION ──────────────────────────────────────────────────────────────
+      - name: region
+        description: Reference table of world regions.
+        columns:
+          - name: R_REGIONKEY
+            description: Unique region identifier (primary key).
+            tests: [not_null, unique]
+          - name: R_NAME
+            description: Region name (AFRICA, AMERICA, ASIA, EUROPE, MIDDLE EAST).
+            tests: [not_null]
+          - name: R_COMMENT
+            description: Free-text comment.
